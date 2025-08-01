@@ -1,0 +1,1220 @@
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mira Reduces Hallucination Rate</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script>
+      tailwind.config = {
+          theme: {
+              extend: {
+                  colors: {
+                      primary: '#165DFF',
+                      secondary: '#7B61FF',
+                      accent: '#00E5FF',
+                      dark: '#0A0F1F',
+                      light: '#E6EEFF',
+                  },
+                  fontFamily: {
+                      inter: ['Inter', 'sans-serif'],
+                      futura: ['Futura', 'sans-serif'],
+                  },
+                  animation: {
+                      'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                      'float': 'float 6s ease-in-out infinite',
+                      'glow': 'glow 2s ease-in-out infinite alternate',
+                  },
+                  keyframes: {
+                      float: {
+                          '0%, 100%': { transform: 'translateY(0)' },
+                          '50%': { transform: 'translateY(-10px)' },
+                      },
+                      glow: {
+                          '0%': { boxShadow: '0 0 5px rgba(22, 93, 255, 0.5), 0 0 10px rgba(22, 93, 255, 0.3)' },
+                          '100%': { boxShadow: '0 0 10px rgba(22, 93, 255, 0.8), 0 0 20px rgba(123, 97, 255, 0.6), 0 0 30px rgba(0, 229, 255, 0.4)' },
+                      }
+                  }
+              },
+          }
+      }
+  </script>
+  <style type="text/tailwindcss">
+      @layer utilities {
+          .text-shadow {
+              text-shadow: 0 0 10px rgba(22, 93, 255, 0.7);
+          }
+          .text-gradient {
+              background-clip: text;
+              -webkit-background-clip: text;
+              color: transparent;
+          }
+          .bg-grid {
+              background-image: linear-gradient(rgba(22, 93, 255, 0.1) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(22, 93, 255, 0.1) 1px, transparent 1px);
+              background-size: 20px 20px;
+          }
+          .glass {
+              backdrop-filter: blur(10px);
+              background: rgba(10, 15, 31, 0.7);
+          }
+          .scrollbar-hide::-webkit-scrollbar {
+              display: none;
+          }
+          .scrollbar-hide {
+              -ms-overflow-style: none;
+              scrollbar-width: none;
+          }
+          .card-hover {
+              transition: all 0.3s ease;
+          }
+          .card-hover:hover {
+              transform: translateY(-5px);
+              box-shadow: 0 10px 25px -5px rgba(22, 93, 255, 0.2);
+          }
+      }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+</head>
+<body class="bg-dark text-light font-inter overflow-x-hidden">
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed w-full z-50 transition-all duration-300 glass">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="#home" class="flex items-center space-x-2">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center justify-center animate-pulse-slow overflow-hidden">
+                    <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/code_assistant/fd34c84604a947acb961db74cbbd1a19~tplv-a9rns2rl98-image.image?rk3s=8e244e95&amp;rrcfp=e75484ac&amp;x-expires=1755249642&amp;x-signature=FD4C0oxMvbQtRnk6x2%2BH1rZRH9Q%3D" alt="Mira Logo" class="w-full h-full object-contain">
+                </div>
+                <span class="text-xl font-bold bg-gradient-to-r from-primary to-accent text-gradient">Mira</span>
+            </a>
+            
+            <!-- Desktop Navigation -->
+            <div class="hidden md:flex space-x-8">
+                <a href="#home" class="nav-link hover:text-accent transition-colors">Home</a>
+                <a href="#ecosystem" class="nav-link hover:text-accent transition-colors">Ecosystem</a>
+                <a href="#faq" class="nav-link hover:text-accent transition-colors">FAQ</a>
+            </div>
+            
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-button" class="md:hidden text-2xl">
+                <i class="fa fa-bars"></i>
+            </button>
+        </div>
+        
+        <!-- Mobile Navigation -->
+        <div id="mobile-menu" class="md:hidden hidden bg-dark/95 backdrop-blur-md">
+            <div class="container mx-auto px-4 py-4 flex flex-col space-y-4">
+                <a href="#home" class="py-2 hover:text-accent transition-colors">Home</a>
+                <a href="#ecosystem" class="py-2 hover:text-accent transition-colors">Ecosystem</a>
+                <a href="#team" class="py-2 hover:text-accent transition-colors">Team</a>
+                <a href="#faq" class="py-2 hover:text-accent transition-colors">FAQ</a>
+                <button class="bg-gradient-to-r from-primary to-secondary px-6 py-3 rounded-full hover:shadow-lg hover:shadow-primary/20 transition-all">
+                    Connect
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="min-h-screen pt-24 relative bg-grid">
+        <div class="absolute inset-0 bg-gradient-to-b from-dark via-dark/90 to-dark z-0"></div>
+        
+        <!-- Animated Background Elements -->
+        <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div class="absolute bottom-1/3 right-1/3 w-80 h-80 bg-secondary/20 rounded-full blur-3xl animate-pulse-slow" style="animation-delay: 1s;"></div>
+        
+        <div class="container mx-auto px-4 relative z-10">
+            <div class="flex flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold leading-tight mb-6">
+                        <span class="bg-gradient-to-r from-primary to-accent text-gradient">Mira:</span>
+                        <br>A Decentralized Network for Trustless AI Output Verification
+                    </h1>
+                    <div class="flex flex-wrap gap-4">
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex justify-center">
+                    <div class="relative animate-float">
+                        <div class="absolute inset-0 bg-gradient-to-r from-primary to-secondary rounded-2xl blur-xl opacity-30"></div>
+                        <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/code_assistant/ce05fbfedc614e139e024137d56e71a5~tplv-a9rns2rl98-image.image?rk3s=8e244e95&amp;rrcfp=e75484ac&amp;x-expires=1755249309&amp;x-signature=v7GOnPoIAGDnY1MLM6qAnY28Lrg%3D" alt="AI Verification Visualization" class="relative z-10 rounded-2xl border border-primary/30 shadow-xl">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Article Section -->
+            <div class="mt-20 max-w-4xl mx-auto bg-dark/50 border border-primary/20 rounded-2xl p-8 md:p-12 shadow-xl backdrop-blur-sm">
+                <h2 class="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-primary to-accent text-gradient">Combatting AI Hallucinations</h2>
+                
+                <div class="prose prose-invert max-w-none">
+                    <h3 class="text-2xl text-primary mb-4">1. Mira Introduction</h3>
+                    <p class="mb-6 text-gray-300 leading-relaxed">
+                        Mira is an advanced platform dedicated to <strong>AI output verification verification</strong>, essentially serving as a decentralized trust layer for AI systems. Unlike conventional approaches where a single model directly provides an answer, Mira first breaks down AI-generated responses into factual <strong>claims</strong>, verifies them, and then delivers only the validated content to users.
+                    </p>
+                    <p class="mb-6 text-gray-300 leading-relaxed">
+                        This process significantly enhances the reliability and trustworthiness of AI outputs, ensuring that end users receive information that is accurate and free from speculation or falsehoods. Mira acts as a protocol embedded within AI applications—not as a standalone consumer product.
+                    </p>
+                    
+                    <h3 class="text-2xl text-primary mb-4">2. The Need for AI Verification</h3>
+                    <p class="mb-6 text-gray-300 leading-relaxed">
+                        Today's generative AI models (like GPT or Claude) offer convenience but also suffer from <strong>hallucinations</strong>—fluent but incorrect phrases generated due to probabilistic prediction rather than factual reasoning. These models lack intrinsic awareness of truth and may confidently invent incorrect statements.
+                    </p>
+                    <p class="mb-6 text-gray-300 leading-relaxed">
+                        Real-world cases illustrate the risk: an airline's chatbot falsely invented a bereavement fare policy, leading to financial losses and a court ruling holding the airline liable; lawyers have been embarrassed in court for citing nonexistent cases; a health consultation AI issued unsafe medication dosages.
+                    </p>
+                    
+                    <div class="bg-dark border border-secondary/30 rounded-xl p-6 my-8">
+                        <p class="italic text-accent">
+                            "In high-stakes domains such as healthcare, finance, and law, relying on unverified AI output can cause severe misinformation and damage. Because AI outputs often sound confident and polished, users may uncritically accept them."
+                        </p>
+                    </div>
+                    
+                    <h3 class="text-2xl text-primary mb-4">3. Mira's Unique Consensus Mechanism</h3>
+                    <p class="mb-6 text-gray-300 leading-relaxed">
+                        Mira implements a <strong>multi-model consensus mechanism</strong> to verify the truthfulness of AI output—a pioneering approach. After an AI model generates a response, Mira splits it into multiple <strong>independent factual claims</strong>. These claims are sent to multiple verifier nodes running diverse AI models.
+                    </p>
+                    <p class="mb-6 text-gray-300 leading-relaxed">
+                        Each node evaluates each claim, categorizing it as "true," "false," or "uncertain." Mira aggregates these votes: if a supermajority agrees a claim is true, it passes; if there is substantial disagreement, the claim is flagged or rejected.
+                    </p>
+                    
+                    <h3 class="text-2xl text-primary mb-4">4. Infrastructure and Technical Architecture</h3>
+                    <p class="mb-4 text-gray-300 leading-relaxed">
+                        Mira's architecture comprises multiple core elements:
+                    </p>
+                    <ul class="list-disc pl-6 mb-6 text-gray-300 space-y-2">
+                        <li><strong>Decentralized verifier node network</strong>: Hosted by independent node operators running different AI models</li>
+                        <li><strong>Claim binarization</strong>: Converts complex AI responses into standardized, independent assertions</li>
+                        <li><strong>Blockchain integration</strong>: Verification decisions are recorded on-chain, producing tamper-resistant audit logs</li>
+                        <li><strong>Node operators and delegators</strong>: Those who run verification nodes and those who contribute GPU resources</li>
+                    </ul>
+                    
+                    <h3 class="text-2xl text-primary mb-4">5. Mitigating AI Bias</h3>
+                    <p class="mb-6 text-gray-300 leading-relaxed">
+                        Bias is another challenge in AI systems. Mira's consensus approach identifies and mitigates bias by requiring diverse models to vote on each claim. With models trained on different datasets and architectures, their judgments reflect varied perspectives.
+                    </p>
+                    
+                    <h3 class="text-2xl text-primary mb-4">6. Performance Metrics</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-dark/80 border border-primary/20 rounded-lg p-5 hover:border-primary/50 transition-colors">
+                            <p class="text-3xl font-bold text-accent mb-2">96-97%</p>
+                            <p class="text-gray-300">AI factual accuracy after verification</p>
+                        </div>
+                        <div class="bg-dark/80 border border-primary/20 rounded-lg p-5 hover:border-primary/50 transition-colors">
+                            <p class="text-3xl font-bold text-accent mb-2">90%</p>
+                            <p class="text-gray-300">Reduction in hallucination frequency</p>
+                        </div>
+                        <div class="bg-dark/80 border border-primary/20 rounded-lg p-5 hover:border-primary/50 transition-colors">
+                            <p class="text-3xl font-bold text-accent mb-2">3B+</p>
+                            <p class="text-gray-300">Text tokens verified daily</p>
+                        </div>
+                        <div class="bg-dark/80 border border-primary/20 rounded-lg p-5 hover:border-primary/50 transition-colors">
+                            <p class="text-3xl font-bold text-accent mb-2">4-4.5M</p>
+                            <p class="text-gray-300">Users served daily</p>
+                        </div>
+                    </div>
+
+                    <!-- 准确率对比图表 -->
+                    <div class="my-10 bg-dark/60 border border-primary/30 rounded-xl p-6 md:p-8">
+                      <h3 class="text-2xl text-accent mb-6 text-center">Mira's Impact on AI Accuracy</h3>
+                      <canvas id="accuracyChart" class="w-full h-64 md:h-80"></canvas>
+                    </div>
+
+                    <!-- 幻觉率对比图表 -->
+                    <div class="my-10 bg-dark/60 border border-primary/30 rounded-xl p-6 md:p-8">
+                      <h3 class="text-2xl text-accent mb-6 text-center">Reduction in AI Hallucination Rate with Mira</h3>
+                      <canvas id="hallucinationChart" class="w-full h-64 md:h-80"></canvas>
+                    </div>
+                    
+                    <h3 class="text-2xl text-primary mb-4">7. Economic Model &amp; Incentive Structure</h3>
+                    <p class="mb-6 text-gray-300 leading-relaxed">
+                        Mira employs a hybrid <strong>Proof-of-Work / Proof-of-Stake (PoW/PoS)</strong> model tailored for AI verification. This hybrid mechanism encourages nodes to contribute compute work and behave truthfully. Delegators can contribute GPU resources for rewards, even without running nodes themselves.
+                    </p>
+                    
+                    <h3 class="text-2xl text-primary mb-4">8. Conclusion &amp; Future Outlook</h3>
+                    <p class="mb-6 text-gray-300 leading-relaxed">
+                        Mira offers a structured, scalable solution to AI reliability challenges. Its decentralized verification layer shifts output trust from single models or manual review to <strong>multi-model consensus</strong>—ensuring that truth is verified <strong>before output reaches the user</strong>.
+                    </p>
+                    <p class="text-gray-300 leading-relaxed">
+                        Looking forward, Mira plans to integrate more diverse AI models, expand domain coverage, and deepen partnerships with industry and regulators. Mira is moving us toward a future of <strong>reliable, self-verified, and widely trusted AI</strong>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ecosystem Section -->
+    <section id="ecosystem" class="py-20 relative bg-grid">
+        <div class="absolute inset-0 bg-gradient-to-b from-dark via-dark/95 to-dark z-0"></div>
+        <div class="absolute top-1/2 left-1/3 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse-slow"></div>
+        
+        <div class="container mx-auto px-4 relative z-10">
+            <div class="text-center mb-16">
+                <h2 class="text-[clamp(1.8rem,4vw,3rem)] font-bold mb-4">
+                    <span class="bg-gradient-to-r from-secondary to-accent text-gradient">Ecosystem &amp; Partnerships</span>
+                </h2>
+                <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+                    Discover Mira's growing network of partners and integrations that strengthen the AI verification ecosystem.
+                </p>
+            </div>
+            
+            <!-- Ecosystem Map -->
+            <div class="mt-8 mb-20 bg-dark/40 border border-primary/20 rounded-2xl p-8">
+                <h3 class="text-2xl font-bold mb-8 text-center">Mira Ecosystem Map</h3>
+                <div class="relative h-96 md:h-128">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <!-- 中心大球 -->
+                        <div class="w-40 h-40 md:w-64 md:h-64 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center z-10">
+                            <span class="text-center font-bold text-xl">Mira Protocol</span>
+                        </div>
+                        
+                        <!-- 四个小球 - 精确计算位置确保中心与线条末端对齐 -->
+                        <div class="absolute top-[12%] left-[12%] w-24 h-24 md:w-32 md:h-32 bg-dark border border-primary/30 rounded-full flex items-center justify-center animate-float" style="animation-delay: 0.2s;">
+                            <span class="text-center text-sm md:text-base">Agent Frameworks</span>
+                        </div>
+                        <div class="absolute top-[12%] right-[12%] w-24 h-24 md:w-32 md:h-32 bg-dark border border-secondary/30 rounded-full flex items-center justify-center animate-float" style="animation-delay: 0.4s;">
+                            <span class="text-center text-sm md:text-base">Data Layer</span>
+                        </div>
+                        <div class="absolute bottom-[12%] left-[12%] w-24 h-24 md:w-32 md:h-32 bg-dark border border-accent/30 rounded-full flex items-center justify-center animate-float" style="animation-delay: 0.6s;">
+                            <span class="text-center text-sm md:text-base">AI Models</span>
+                        </div>
+                        <div class="absolute bottom-[12%] right-[12%] w-24 h-24 md:w-32 md:h-32 bg-dark border border-primary/30 rounded-full flex items-center justify-center animate-float" style="animation-delay: 0.8s;">
+                            <span class="text-center text-sm md:text-base">Compute Layer</span>
+                        </div>
+                        
+                        <!-- 连接线 - 缩短至原长度的五分之三，保持小球位置不变 -->
+                        <svg class="absolute inset-0 w-full h-full z-0" xmlns="http://www.w3.org/2000/svg">
+                            <!-- 左上角连接线 - 原12%位置，现38%位置(50% + 0.6*(12% - 50%)) -->
+                            <line x1="50%" y1="50%" x2="22%" y2="28%" stroke="rgba(22, 93, 255, 0.5)" stroke-width="2"></line>
+                            <!-- 右上角连接线 - 原88%位置，现62%位置(50% + 0.6*(88% - 50%)) -->
+                            <line x1="50%" y1="50%" x2="78%" y2="26%" stroke="rgba(123, 97, 255, 0.5)" stroke-width="2"></line>
+                            <!-- 左下角连接线 -->
+                            <line x1="50%" y1="50%" x2="22%" y2="68%" stroke="rgba(0, 229, 255, 0.5)" stroke-width="2"></line>
+                            <!-- 右下角连接线 -->
+                            <line x1="50%" y1="50%" x2="78%" y2="68%" stroke="rgba(22, 93, 255, 0.5)" stroke-width="2"></line>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ecosystem Spotlight: Agent Frameworks Layer -->
+            <div class="mb-24 scroll-mt-24" id="agent-frameworks">
+                <div class="flex items-center mb-8">
+                    <div class="w-12 h-1 bg-gradient-to-r from-primary to-accent mr-4"></div>
+                    <h3 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-accent text-gradient">Ecosystem Spotlight: Agent Frameworks Layer</h3>
+                </div>
+                
+                <div class="bg-dark/50 border border-primary/20 rounded-xl p-6 md:p-8 mb-8">
+                    <p class="text-lg text-gray-300 mb-4">
+                        Reliable AI agents require verified intelligence. Our verification network powers the next generation of autonomous agents by ensuring their outputs are accurate, trustless, and error-resistant.
+                    </p>
+                    <p class="text-lg text-gray-300">
+                        We provide the verification infrastructure that agent frameworks tap into to eliminate hallucinations and ensure autonomous operations can scale safely, without requiring human oversight.
+                    </p>
+                    <p class="text-lg text-gray-300 mt-4">
+                        Here are some of the frameworks and teams building using our APIs:
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Agent Framework 1 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">SendAI</h4>
+                        <p class="text-gray-400 mb-2">@sendaifun</p>
+                        <p class="text-gray-300">
+                            leverages our decentralized verification infrastructure to ensure Solana Agent Kit–based agents produce trustworthy outputs. SendAI brings reliability to autonomous blockchain operations. Together, we're building toward fully autonomous on-chain agents that operate without human oversight.
+                        </p>
+                    </div>
+                    
+                    <!-- Agent Framework 2 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">ZerePy by Zerebro</h4>
+                        <p class="text-gray-400 mb-2">@0xzerebro</p>
+                        <p class="text-gray-300">
+                            integrates our consensus mechanisms into ZerePy, a Python-based agent framework, enabling verified agent outputs across both Web3 and social platforms via modular connectors. This partnership advances our vision of verified intelligence across all digital platforms.
+                        </p>
+                    </div>
+                    
+                    <!-- Agent Framework 3 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">OpenLedger</h4>
+                        <p class="text-gray-400 mb-2">@OpenledgerHQ</p>
+                        <p class="text-gray-300">
+                            contributes advanced benchmarking and evaluation methods for decentralized AI agents, enhancing the robustness of our verification and testing layer. Their expertise accelerates our path to establishing universal standards for AI reliability.
+                        </p>
+                    </div>
+                    
+                    <!-- Agent Framework 4 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Eliza OS</h4>
+                        <p class="text-gray-400 mb-2">@elizaos</p>
+                        <p class="text-gray-300">
+                            with 15k+ GitHub stars, is a Web3-native agent OS that offers multi-model support and extensible architectures enhanced with our verification primitives for autonomous AI operations. Together, we're enabling the next generation of truly trustless AI systems.
+                        </p>
+                    </div>
+                    
+                    <!-- Agent Framework 5 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">ARC</h4>
+                        <p class="text-gray-400 mb-2">@arcdotfun</p>
+                        <p class="text-gray-300">
+                            integrates our trust layer into Rig, a Rust-based open-source LLM framework serving 2.5M+ users and delivering &gt;90% error reduction across 1M+ daily inferences. This partnership demonstrates the scalable future of error-free AI at production scale.
+                        </p>
+                    </div>
+                    
+                    <!-- Agent Framework 6 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">KGeN</h4>
+                        <p class="text-gray-400 mb-2">@KGeN_IO</p>
+                        <p class="text-gray-300">
+                            brings proprietary gaming datasets into our verification network, enabling scalable, trustless evaluation of game-specific AI agents and mechanics. Together, we're building the foundation for provable intelligence in gaming worlds.
+                        </p>
+                    </div>
+                    
+                    <!-- Agent Framework 7 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Talus Network</h4>
+                        <p class="text-gray-400 mb-2">@TalusNetwork</p>
+                        <p class="text-gray-300">
+                            is building the backbone of the Autonomous AI Economy, using our verification to support on-chain, income-generating AI agents with guaranteed reliability. Our work sets the stage for a decentralized labor force powered by agents you can trust.
+                        </p>
+                    </div>
+                    
+                    <!-- Agent Framework 8 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">AiCraft</h4>
+                        <p class="text-gray-400 mb-2">@aicraftfun</p>
+                        <p class="text-gray-300">
+                            a top 10 project on Monad Radar and featured by Bitcoin(.)com, is a launchpad for next-gen AI agents, now backed by our verification stack. We're enabling the next wave of AI-native apps that prove what they do.
+                        </p>
+                    </div>
+                    
+                    <!-- Agent Framework 9 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Spectral Labs</h4>
+                        <p class="text-gray-400 mb-2">@Spectral_Labs</p>
+                        <p class="text-gray-300">
+                            enables users to build agentic companies and networks of autonomous agents that collaborate toward shared goals, all powered by our consensus mechanisms. This is the first step toward scalable, verifiable coordination between AI agents.
+                        </p>
+                    </div>
+                    
+                    <!-- Agent Framework 10 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover md:col-span-2 lg:col-span-1">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Phala Network</h4>
+                        <p class="text-gray-400 mb-2">@PhalaNetwork</p>
+                        <p class="text-gray-300">
+                            integrates our system as an official model provider, delivering trustless inference and verifiable LLMs for its secure AI agent ecosystem. Together, we're making private, provable AI the default across Web3.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ecosystem Spotlight: Data Layer -->
+            <div class="mb-24 scroll-mt-24" id="data-layer">
+                <div class="flex items-center mb-8">
+                    <div class="w-12 h-1 bg-gradient-to-r from-secondary to-accent mr-4"></div>
+                    <h3 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-secondary to-accent text-gradient">Ecosystem Spotlight: Data Layer</h3>
+                </div>
+                
+                <div class="bg-dark/50 border border-secondary/20 rounded-xl p-6 md:p-8 mb-8">
+                    <p class="text-lg text-gray-300 mb-4">
+                        High-quality data sources are the essential building blocks for our verification network to deliver the highest accuracy of outputs.
+                    </p>
+                    <p class="text-lg text-gray-300 mb-4">
+                        We leverage premium research combined with comprehensive web coverage to create verification that spans specialized knowledge domains and real-time information. This enhances verification accuracy across different contexts, reduces information gaps, and eliminates reliance on single data sources.
+                    </p>
+                    <p class="text-lg text-gray-300">
+                        Meet our data providers:
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Data Provider 1 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">Delphi Digital</h4>
+                        <p class="text-gray-400 mb-2">@Delphi_Digital</p>
+                        <p class="text-gray-300">
+                            provides exclusive crypto research and market analysis for their Oracle, delivering institutional-grade insights that strengthen our verification of financial and blockchain-related claims.
+                        </p>
+                    </div>
+                    
+                    <!-- Data Provider 2 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">Exa AI</h4>
+                        <p class="text-gray-400 mb-2">@exa_ai</p>
+                        <p class="text-gray-300">
+                            offers AI-powered web search that finds exactly what you need without ad-optimized results, enabling our network to access clean, relevant information for comprehensive claim verification.
+                        </p>
+                    </div>
+                    
+                    <!-- Data Provider 3 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">Bespoke RAG Implementations</h4>
+                        <p class="text-gray-300">
+                            Custom Retrieval-Augmented Generation systems provide domain-specific verification capabilities, enabling specialized knowledge validation across technical, medical, legal, and other expert fields.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="mt-8 bg-dark/30 border border-secondary/10 rounded-xl p-6">
+                    <p class="text-gray-300">
+                        By combining authoritative institutional research with comprehensive community insights and specialized domain knowledge, we create a verification foundation that can accurately assess claims across the full spectrum of human knowledge. This multi-layered data approach enables truly trustless AI verification at scale.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Ecosystem Spotlight: AI Models Layer -->
+            <div class="mb-24 scroll-mt-24" id="ai-models">
+                <div class="flex items-center mb-8">
+                    <div class="w-12 h-1 bg-gradient-to-r from-accent to-primary mr-4"></div>
+                    <h3 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-accent to-primary text-gradient">Ecosystem Spotlight: AI Models Layer</h3>
+                </div>
+                
+                <div class="bg-dark/50 border border-accent/20 rounded-xl p-6 md:p-8 mb-8">
+                    <p class="text-lg text-gray-300 mb-4">
+                        Our verification network requires diverse and reliable AI models to power our consensus mechanism.
+                    </p>
+                    <p class="text-lg text-gray-300 mb-4">
+                        We leverage multiple AI models with different training orientations to cross-verify outputs and eliminate hallucinations. This improves verification accuracy and removes single points of failure, while balancing individual model biases through collective intelligence.
+                    </p>
+                    <p class="text-lg text-gray-300">
+                        We leverage AI models from:
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- AI Model 1 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">OpenAI</h4>
+                        <p class="text-gray-400 mb-2">@OpenAI</p>
+                        <p class="text-gray-300">
+                            frontier models bring advanced reasoning capabilities to our verification consensus, enabling sophisticated claim validation across complex domains.
+                        </p>
+                    </div>
+                    
+                    <!-- AI Model 2 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">DeepSeek</h4>
+                        <p class="text-gray-400 mb-2">@DeepSeek_AI</p>
+                        <p class="text-gray-300">
+                            contributes specialized reasoning models that excel at mathematical and logical verification tasks within our distributed consensus.
+                        </p>
+                    </div>
+                    
+                    <!-- AI Model 3 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Meta AI</h4>
+                        <p class="text-gray-400 mb-2">@MetaAI</p>
+                        <p class="text-gray-300">
+                            Llama models provide open-source excellence and diverse training perspectives crucial for balanced verification outcomes.
+                        </p>
+                    </div>
+                    
+                    <!-- AI Model 4 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Alibaba Qwen</h4>
+                        <p class="text-gray-400 mb-2">@Alibaba_Qwen</p>
+                        <p class="text-gray-300">
+                            delivers multilingual capabilities and unique training orientations that strengthen our global verification consensus.
+                        </p>
+                    </div>
+                    
+                    <!-- AI Model 5 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Anthropic</h4>
+                        <p class="text-gray-400 mb-2">@AnthropicAI</p>
+                        <p class="text-gray-300">
+                            Claude models contribute constitutional AI training and safety-focused perspectives to our verification framework.
+                        </p>
+                    </div>
+                    
+                    <!-- AI Model 6 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Sentient</h4>
+                        <p class="text-gray-400 mb-2">@SentientAGI</p>
+                        <p class="text-gray-300">
+                            brings decentralized AI model access and community-driven training approaches to our verification ecosystem.
+                        </p>
+                    </div>
+                    
+                    <!-- AI Model 7 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover sm:col-span-2 lg:col-span-1">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Nous Research</h4>
+                        <p class="text-gray-400 mb-2">@NousResearch</p>
+                        <p class="text-gray-300">
+                            provides specialized fine-tuned models optimized for specific domains and verification tasks within our network.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="mt-8 bg-dark/30 border border-accent/10 rounded-xl p-6">
+                    <p class="text-gray-300">
+                        By combining LLMs training using diverse training methodologies, orientations, and architectural approaches, we create a verification consensus that transcends the limitations of any single model. This collective intelligence enables truly trustless AI verification at scale.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Ecosystem Spotlight: Compute Layer -->
+            <div class="mb-24 scroll-mt-24" id="compute-layer">
+                <div class="flex items-center mb-8">
+                    <div class="w-12 h-1 bg-gradient-to-r from-primary to-secondary mr-4"></div>
+                    <h3 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-secondary text-gradient">Ecosystem Spotlight: Compute Layer</h3>
+                </div>
+                
+                <div class="bg-dark/50 border border-primary/20 rounded-xl p-6 md:p-8 mb-8">
+                    <p class="text-lg text-gray-300 mb-4">
+                        Our verification network requires a strong and reliable compute infrastructure.
+                    </p>
+                    <p class="text-lg text-gray-300 mb-4">
+                        We leverage distributed GPU power for our consensus mechanism to verify outputs. This enhances reliability and scalability across our infrastructure, reduces overall computing costs, and eliminates single points of failure.
+                    </p>
+                    <p class="text-lg text-gray-300">
+                        Meet our compute partners:
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Compute Partner 1 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-primary">Io.net</h4>
+                        <p class="text-gray-400 mb-2">@ionet</p>
+                        <p class="text-gray-300">
+                            offers world-class DePIN infrastructure that unlocks thousands of globally distributed GPUs for reliable, low-latency AI compute at scale. io.net is purpose-built for AI/ML workloads, enabling democratized access to compute.
+                        </p>
+                    </div>
+                    
+                    <!-- Compute Partner 2 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-primary">Exabits</h4>
+                        <p class="text-gray-400 mb-2">@exa_bits</p>
+                        <p class="text-gray-300">
+                            offers enterprise-grade GPU infrastructure and a financialized compute layer to unlock unprecedented AI accessibility. Exabits brings exclusive access to rare H100s/A100s, and 1-second deployment with its enterprise-grade infrastructure.
+                        </p>
+                    </div>
+                    
+                    <!-- Compute Partner 3 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-primary">Spheron</h4>
+                        <p class="text-gray-400 mb-2">@SpheronFDN</p>
+                        <p class="text-gray-300">
+                            offers a network of community-powered GPUs across 100+ regions that are crucial to power trustless AI verification at scale. Spheron enables up to 80% cost savings and flexible scaling for dynamic workloads.
+                        </p>
+                    </div>
+                    
+                    <!-- Compute Partner 4 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-primary">Hyperbolic</h4>
+                        <p class="text-gray-400 mb-2">@Hyperbolic_labs</p>
+                        <p class="text-gray-300">
+                            revolutionary Hyper-dOS orchestration layer delivers auto-scaling GPU clusters, powerful inference services, and privacy-preserving compute. This helps us run our consensus mechanism to enable reliable AI and power @klok_app with its GPU marketplace.
+                        </p>
+                    </div>
+                    
+                    <!-- Compute Partner 5 -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover md:col-span-2 lg:col-span-1">
+                        <h4 class="text-xl font-semibold mb-2 text-primary">Gaib</h4>
+                        <p class="text-gray-400 mb-2">@gaib_ai</p>
+                        <p class="text-gray-300">
+                            is building the economic layer for AI, tokenizing GPUs and their yield to make compute a new asset class. Gaib's decentralized liquid market, making compute easily accessible and investable, enables AI verification at scale.
+                        </p>
+                    </div>
+                    
+                    <!-- New Compute Partner: Aethir -->
+                    <div class="bg-dark/40 border border-primary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-primary">Aethir</h4>
+                        <p class="text-gray-400 mb-2">@AethirCloud</p>
+                        <p class="text-gray-300">
+                            Aethir is powering Mira's trustless AI through their premier decentralized GPU infrastructure of 46,000+ GPUs.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ecosystem Spotlight: Ecosystem Partners -->
+            <div class="mb-24 scroll-mt-24" id="ecosystem-partners">
+                <div class="flex items-center mb-8">
+                    <div class="w-12 h-1 bg-gradient-to-r from-secondary to-primary mr-4"></div>
+                    <h3 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-secondary to-primary text-gradient">Ecosystem Spotlight: Ecosystem Partners</h3>
+                </div>
+                
+                <div class="bg-dark/50 border border-secondary/20 rounded-xl p-6 md:p-8 mb-8">
+                    <p class="text-lg text-gray-300">
+                        Think of our network as the ultimate verifier for AI — ensuring outputs are accurate, bias-free, and ready for real-world use. Here's how our ecosystem partners are working with us towards a reliable and trustless future:
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Ecosystem Partner 1 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">GAIB</h4>
+                        <p class="text-gray-400 mb-2">@gaib_ai</p>
+                        <p class="text-gray-300">
+                            is pioneering AiFi with tokenized GPUs and the AI Dollar (AID) for on-chain yields. Partnering with Mira combines our trust layer with GAIB's economic infrastructure, verifying AI compute at scale. This enables secure, hallucination-resistant financial AI, from encrypted yields to institutional-grade DeFi.
+                        </p>
+                    </div>
+                    
+                    <!-- Ecosystem Partner 2 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">Lagrange</h4>
+                        <p class="text-gray-400 mb-2">@lagrangedev</p>
+                        <p class="text-gray-300">
+                            pioneers zkML with DeepProve for verifiable AI inferences. Our deepened partnership powers Mira's verification layer with zero-knowledge proofs, proving outputs in real time without revealing data. This sets new standards for privacy-preserving, auditable AI in DeFi and beyond.
+                        </p>
+                    </div>
+                    
+                    <!-- Ecosystem Partner 3 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">Gaianet AI</h4>
+                        <p class="text-gray-400 mb-2">@Gaianet_AI</p>
+                        <p class="text-gray-300">
+                            is decentralizing AI inferencing with a distributed GenAI agent network of 280k+ nodes. We're working to integrate our trustless verification network with Gaia's 280k+ node network, further bolstering AI infrastructure for real-world, autonomous use cases.
+                        </p>
+                    </div>
+                    
+                    <!-- Ecosystem Partner 4 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">Think Agents</h4>
+                        <p class="text-gray-400 mb-2">@thinkagents</p>
+                        <p class="text-gray-300">
+                            empowers builders to own and create personalized AI via the Think Agent Standard and IAI Institute. Mira's verification integrates seamlessly, enabling trustless agent-to-agent interactions on-chain. This fosters intelligence for applications where reliability is key to innovation.
+                        </p>
+                    </div>
+                    
+                    <!-- Ecosystem Partner 5 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">Storacha Network</h4>
+                        <p class="text-gray-400 mb-2">@storachanetwork</p>
+                        <p class="text-gray-300">
+                            provides AI-native decentralized storage on Filecoin for high-performance data. Our collaboration stores Mira's AI consensus transactions immutably, creating verifiable audit trails. This ensures tamper-proof, retrievable data for autonomous AI at a petabyte scale.
+                        </p>
+                    </div>
+                    
+                    <!-- Ecosystem Partner 6 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">Monad</h4>
+                        <p class="text-gray-400 mb-2">@monad</p>
+                        <p class="text-gray-300">
+                            is revolutionizing Ethereum-compatible L1s with 10,000 TPS throughput. Over our continued collaboration, we will look to bring Mira's trustless verification to Monad's high-performance ecosystem, enabling secure AI integrations for dApps where speed meets reliability.
+                        </p>
+                    </div>
+                    
+                    <!-- Ecosystem Partner 7 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">Kernel DAO</h4>
+                        <p class="text-gray-400 mb-2">@kernel_dao</p>
+                        <p class="text-gray-300">
+                            powers $2B+ in multi-chain restaking across ETH, BNB, and BTC. Our alliance brings verified AI to BNB via Kernel's ecosystem, as an official coprocessor enabling trustless AI execution on-chain.
+                        </p>
+                    </div>
+                    
+                    <!-- Ecosystem Partner 8 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">Plume Network</h4>
+                        <p class="text-gray-400 mb-2">@plumenetwork</p>
+                        <p class="text-gray-300">
+                            is the blockchain for RWAfi, tokenizing real-world assets on-chain. Over the course of our partnership in the future, we will look to integrate our verification with Plume's AI frameworks, ensuring hallucination-free outputs for financial decisions.
+                        </p>
+                    </div>
+                    
+                    <!-- Ecosystem Partner 9 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">Mantis App</h4>
+                        <p class="text-gray-400 mb-2">@mantis_app</p>
+                        <p class="text-gray-300">
+                            delivers personalized AI agents for DeFi with advanced conditionality and the DISE LLM. Mira's verification ensures accurate, bias-reduced outputs for financial strategies. This partnership empowers users to develop reliable AI copilots for vaults, trades, and more.
+                        </p>
+                    </div>
+                    
+                    <!-- Ecosystem Partner 10 -->
+                    <div class="bg-dark/40 border border-secondary/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-secondary">Autonome</h4>
+                        <p class="text-gray-400 mb-2">@0xautonome</p>
+                        <p class="text-gray-300">
+                            offers TEE-secured infrastructure and Cross-Agent Routing for tamper-proof AI communications. Partnering with Mira adds decentralized verification, eliminating hallucinations in high-stakes environments. Together, we enable fully autonomous agents for assets and decisions without human oversight.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="mt-8 bg-dark/30 border border-secondary/10 rounded-xl p-6">
+                    <p class="text-gray-300">
+                        These partnerships demonstrate trustless AI at production scale. From reducing error rates to enabling autonomous operations, we're building the infrastructure for reliable intelligence.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Ecosystem Spotlight: Partner Applications -->
+            <div class="mb-16 scroll-mt-24" id="partner-applications">
+                <div class="flex items-center mb-8">
+                    <div class="w-12 h-1 bg-gradient-to-r from-accent to-secondary mr-4"></div>
+                    <h3 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-accent to-secondary text-gradient">Ecosystem Spotlight: Partner Applications</h3>
+                </div>
+                
+                <div class="bg-dark/50 border border-accent/20 rounded-xl p-6 md:p-8 mb-8">
+                    <p class="text-lg text-gray-300">
+                        Think of our network as a fact-checker for AI. We make sure AI gives you accurate answers, every single time. Here's how amazing teams are using our technology to build apps you can actually trust:
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Partner Application 1 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Delphi Digital</h4>
+                        <p class="text-gray-400 mb-2">@Delphi_Digital</p>
+                        <p class="text-gray-300">
+                            We worked with Delphi Digital to power Delphi Oracle - an AI research assistant that lives inside Delphi's crypto reports. It's like having a personal crypto expert who can instantly explain any complex topic. Using our verification network, every answer is fact-checked for accuracy.
+                        </p>
+                    </div>
+                    
+                    <!-- Partner Application 2 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Kernel DAO</h4>
+                        <p class="text-gray-400 mb-2">@kernel_dao</p>
+                        <p class="text-gray-300">
+                            Kernel DAO is bringing verified AI to the BNB ecosystem. What does this mean? Developers can now build apps on BNB where every AI decision is double-checked for accuracy. It's setting a whole new standard for how reliable Web3 apps can be.
+                        </p>
+                    </div>
+                    
+                    <!-- Partner Application 3 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Klok</h4>
+                        <p class="text-gray-400 mb-2">@klok_app</p>
+                        <p class="text-gray-300">
+                            Klok is like ChatGPT, but better - it checks its own homework. By using multiple AI models (GPT-4o mini, Llama 3.3, DeepSeek-R1) and our consensus mechanism, it makes sure you get accurate answers every time. Over 500K users already trust it for reliable AI chat.
+                        </p>
+                    </div>
+                    
+                    <!-- Partner Application 4 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Fere AI</h4>
+                        <p class="text-gray-400 mb-2">@Fere_AI</p>
+                        <p class="text-gray-300">
+                            Fere AI solves a big problem in crypto: can you trust AI to handle your money? Our partnership makes sure their AI agents don't "hallucinate" (make stuff up) when managing crypto trades. Your money deserves accurate AI.
+                        </p>
+                    </div>
+                    
+                    <!-- Partner Application 5 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Gigabrain</h4>
+                        <p class="text-gray-400 mb-2">@GigabrainGG</p>
+                        <p class="text-gray-300">
+                            Gigabrain's Auto-Trade puts our verified AI to work in real trading. Their platform uses AI to make trading decisions, but with our verification, traders know the AI won't make costly mistakes. Smart trading just got smarter.
+                        </p>
+                    </div>
+                    
+                    <!-- Partner Application 6 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Astro AI</h4>
+                        <p class="text-gray-300">
+                            Astro247 combines astrology with AI, but here's the twist - they keep your data private AND make sure the AI readings are accurate. Our privacy-preserving tech means you can get personalized insights without worrying about your data.
+                        </p>
+                    </div>
+                    
+                    <!-- Partner Application 7 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Learnrite</h4>
+                        <p class="text-gray-300">
+                            Creating test content demands zero mistakes. Learnrite hits 98% accuracy using our consensus mechanism - multiple AI models verify each other, catching errors before they reach students. They've cut costs by 90% while ensuring educational content is trustworthy. Real-world proof that verified AI works.
+                        </p>
+                    </div>
+                    
+                    <!-- Partner Application 8 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Amor</h4>
+                        <p class="text-gray-300 mb-2">Case Study</p>
+                        <p class="text-gray-300">
+                            Amor is an AI companion that actually remembers you. Using our Verification API, it ensures any advice or facts shared are accurate - making Amor a safe confidant you can trust. Finally, an AI friend that's both emotionally intelligent and factually reliable.
+                        </p>
+                    </div>
+                    
+                    <!-- Partner Application 9 -->
+                    <div class="bg-dark/40 border border-accent/20 rounded-xl p-6 card-hover">
+                        <h4 class="text-xl font-semibold mb-2 text-accent">Creato</h4>
+                        <p class="text-gray-300">
+                            Creato turns your ideas into social content that sounds like you. It learns your tone and style through our memory layers, creating posts that feel authentically yours. With our verification ensuring all facts and trends are accurate, creators can share confidently. Your AI-powered social copilot that never compromises your voice or credibility.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-20 relative bg-grid">
+        <div class="absolute inset-0 bg-gradient-to-b from-dark via-dark/95 to-dark z-0"></div>
+        <div class="absolute top-1/3 right-1/3 w-72 h-72 bg-secondary/10 rounded-full blur-3xl animate-pulse-slow"></div>
+        
+        <div class="container mx-auto px-4 relative z-10">
+            <div class="text-center mb-16">
+                <h2 class="text-[clamp(1.8rem,4vw,3rem)] font-bold mb-4">
+                    <span class="bg-gradient-to-r from-accent to-primary text-gradient">Frequently Asked Questions</span>
+                </h2>
+                <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+                    Find answers to common questions about Mira's technology and approach.
+                </p>
+            </div>
+            
+            <div class="max-w-3xl mx-auto">
+                <!-- FAQ Item 1 -->
+                <div class="mb-4 border border-primary/20 rounded-lg overflow-hidden">
+                    <button class="faq-toggle w-full flex justify-between items-center p-6 text-left bg-dark/60 hover:bg-dark/80 transition-colors">
+                        <span class="font-semibold text-lg">What exactly is an AI hallucination?</span>
+                        <i class="fa fa-chevron-down text-primary transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden p-6 pt-0 bg-dark/40 border-t border-primary/10">
+                        <p class="text-gray-300">
+                            An AI hallucination is a phenomenon where an AI model generates false or misleading information that sounds plausible but is not based on fact. These occur because generative AI models predict the most likely next word in a sequence rather than verifying factual accuracy.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- FAQ Item 2 -->
+                <div class="mb-4 border border-primary/20 rounded-lg overflow-hidden">
+                    <button class="faq-toggle w-full flex justify-between items-center p-6 text-left bg-dark/60 hover:bg-dark/80 transition-colors">
+                        <span class="font-semibold text-lg">How does Mira differ from traditional fact-checking?</span>
+                        <i class="fa fa-chevron-down text-primary transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden p-6 pt-0 bg-dark/40 border-t border-primary/10">
+                        <p class="text-gray-300">
+                            Unlike traditional fact-checking that relies on human reviewers or single databases, Mira uses a decentralized network of diverse AI models to verify claims through consensus. This allows for real-time verification at scale while reducing bias and single points of failure.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- FAQ Item 3 -->
+                <div class="mb-4 border border-primary/20 rounded-lg overflow-hidden">
+                    <button class="faq-toggle w-full flex justify-between items-center p-6 text-left bg-dark/60 hover:bg-dark/80 transition-colors">
+                        <span class="font-semibold text-lg">How fast is Mira's verification process?</span>
+                        <i class="fa fa-chevron-down text-primary transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden p-6 pt-0 bg-dark/40 border-t border-primary/10">
+                        <p class="text-gray-300">
+                            Mira's verification happens in near real-time, typically adding only 200-500ms to the AI response time. This speed is achieved through optimized claim splitting, parallel processing across the node network, and efficient consensus algorithms.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- FAQ Item 4 -->
+                <div class="mb-4 border border-primary/20 rounded-lg overflow-hidden">
+                    <button class="faq-toggle w-full flex justify-between items-center p-6 text-left bg-dark/60 hover:bg-dark/80 transition-colors">
+                        <span class="font-semibold text-lg">Can Mira be integrated with any AI model?</span>
+                        <i class="fa fa-chevron-down text-primary transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden p-6 pt-0 bg-dark/40 border-t border-primary/10">
+                        <p class="text-gray-300">
+                            Yes, Mira is designed as a protocol-agnostic verification layer that can work with any AI model or application. Its claim binarization process converts outputs from different models into a standardized format for consistent verification across the network.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- FAQ Item 5 -->
+                <div class="mb-4 border border-primary/20 rounded-lg overflow-hidden">
+                    <button class="faq-toggle w-full flex justify-between items-center p-6 text-left bg-dark/60 hover:bg-dark/80 transition-colors">
+                        <span class="font-semibold text-lg">How can I become a node operator?</span>
+                        <i class="fa fa-chevron-down text-primary transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden p-6 pt-0 bg-dark/40 border-t border-primary/10">
+                        <p class="text-gray-300">
+                            To become a node operator, you need to meet certain hardware requirements, stake a minimum amount of Mira tokens as collateral, and run the node software. The network rewards operators for accurate verification work while penalizing those who consistently provide incorrect evaluations.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- FAQ Item 6 -->
+                <div class="mb-4 border border-primary/20 rounded-lg overflow-hidden">
+                    <button class="faq-toggle w-full flex justify-between items-center p-6 text-left bg-dark/60 hover:bg-dark/80 transition-colors">
+                        <span class="font-semibold text-lg">Is Mira's verification process transparent?</span>
+                        <i class="fa fa-chevron-down text-primary transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden p-6 pt-0 bg-dark/40 border-t border-primary/10">
+                        <p class="text-gray-300">
+                            Yes, all verification decisions are recorded on a public blockchain, creating an immutable audit trail. This includes which models participated, how each voted, and the final consensus outcome. This transparency allows for third-party audits and builds trust in the verification process.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark border-t border-primary/20 py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                <div>
+                    <a href="#home" class="flex items-center space-x-2 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center overflow-hidden">
+                            <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/code_assistant/47fc8621d3834d9c90eddaaa5df25866~tplv-a9rns2rl98-image.image?rcl=202508011711327925FE9EB16587130008&amp;rk3s=8e244e95&amp;rrcfp=e75484ac&amp;x-expires=1754644292&amp;x-signature=hYsYSe%2FqLsjZBnjXhs4Jc%2FLMAQc%3D" alt="Mira Logo" class="w-full h-full object-contain">
+                        </div>
+                        <span class="text-xl font-bold bg-gradient-to-r from-primary to-accent text-gradient">Mira</span>
+                    </a>
+                    <p class="text-gray-400 mb-4">
+                        A decentralized trust layer for AI systems, combating hallucinations through multi-model consensus.
+                    </p>
+                    <div class="flex items-center space-x-2">
+                        <a href="#" class="text-gray-400 hover:text-primary transition-colors">
+                            <i class="fa fa-twitter"></i>
+                        </a>
+                        <span class="text-gray-400">： @Mira_Network</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pt-8 border-t border-primary/10 flex flex-col items-center">
+                <p class="text-gray-400 text-center max-w-md">
+                    This webpage is produced by BTTB, with the primary aim of helping people better understand Mira and introducing its ecosystem.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 准确率图表初始化
+        const accuracyCtx = document.getElementById('accuracyChart').getContext('2d');
+        new Chart(accuracyCtx, {
+          type: 'bar',
+          data: {
+            labels: ['Original Model', 'With Mira'],
+            datasets: [{
+              label: 'Factual Accuracy',
+              data: [70, 96],
+              backgroundColor: ['rgba(229, 115, 115, 0.7)', 'rgba(129, 199, 132, 0.7)'],
+              borderColor: ['#e57373', '#81c784'],
+              borderWidth: 1,
+              borderRadius: 10
+            }]
+          },
+          options: {
+            responsive: true,
+            animation: {
+              duration: 2500,
+              easing: 'easeOutBounce'
+            },
+            plugins: {
+              title: {
+                display: true,
+                text: 'AI Output Accuracy Before and After Mira',
+                color: '#E6EEFF',
+                font: {
+                  size: 16
+                }
+              },
+              legend: {
+                display: false
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return context.dataset.label + ': ' + context.parsed.y + '%';
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                  callback: function(value) {
+                    return value + '%';
+                  },
+                  color: '#94a3b8'
+                },
+                grid: {
+                  color: 'rgba(22, 93, 255, 0.1)'
+                }
+              },
+              x: {
+                ticks: {
+                  color: '#94a3b8'
+                },
+                grid: {
+                  color: 'rgba(22, 93, 255, 0.1)'
+                }
+              }
+            }
+          }
+        });
+
+        // 幻觉率图表初始化
+        const hallucinationCtx = document.getElementById('hallucinationChart').getContext('2d');
+        new Chart(hallucinationCtx, {
+          type: 'line',
+          data: {
+            labels: ['Before Mira', 'After Mira'],
+            datasets: [{
+              label: 'Hallucination Rate',
+              data: [30, 4],
+              borderColor: '#00E5FF',
+              backgroundColor: 'rgba(0, 229, 255, 0.1)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 6,
+              pointBackgroundColor: '#165DFF'
+            }]
+          },
+          options: {
+            responsive: true,
+            animation: {
+              duration: 2500,
+              easing: 'easeInOutCubic'
+            },
+            plugins: {
+              title: {
+                display: true,
+                text: 'AI Hallucination Rate Before and After Mira',
+                color: '#E6EEFF',
+                font: {
+                  size: 16
+                }
+              },
+              legend: {
+                display: false
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return context.dataset.label + ': ' + context.parsed.y + '%';
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 30,
+                ticks: {
+                  stepSize: 5,
+                  callback: function(value) {
+                    return value + '%';
+                  },
+                  color: '#94a3b8'
+                },
+                grid: {
+                  color: 'rgba(22, 93, 255, 0.1)'
+                }
+              },
+              x: {
+                ticks: {
+                  color: '#94a3b8'
+                },
+                grid: {
+                  color: 'rgba(22, 93, 255, 0.1)'
+                }
+              }
+            }
+          }
+        });
+
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            // Toggle icon between bars and X
+            const icon = mobileMenuButton.querySelector('i');
+            if (icon.classList.contains('fa-bars')) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            } else {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        });
+        
+        // Navbar scroll effect
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('py-2');
+                navbar.classList.remove('py-4');
+                navbar.classList.add('bg-dark/90');
+                navbar.classList.remove('glass');
+            } else {
+                navbar.classList.add('py-4');
+                navbar.classList.remove('py-2');
+                navbar.classList.remove('bg-dark/90');
+                navbar.classList.add('glass');
+            }
+        });
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                // Close mobile menu if open
+                if (!mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                    const icon = mobileMenuButton.querySelector('i');
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                    
+                    // Update active nav link
+                    document.querySelectorAll('.nav-link').forEach(link => {
+                        link.classList.remove('text-accent');
+                    });
+                    if (this.classList.contains('nav-link')) {
+                        this.classList.add('text-accent');
+                    }
+                }
+            });
+        });
+        
+        // FAQ accordions
+        const faqToggles = document.querySelectorAll('.faq-toggle');
+        
+        faqToggles.forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const content = toggle.nextElementSibling;
+                const icon = toggle.querySelector('i');
+                
+                // Toggle current FAQ
+                content.classList.toggle('hidden');
+                icon.classList.toggle('rotate-180');
+                
+                // Close other FAQs
+                faqToggles.forEach(otherToggle => {
+                    if (otherToggle !== toggle) {
+                        otherToggle.nextElementSibling.classList.add('hidden');
+                        otherToggle.querySelector('i').classList.remove('rotate-180');
+                    }
+                });
+            });
+        });
+        
+        // Animate elements on scroll
+        const animateOnScroll = () => {
+            const elements = document.querySelectorAll('.grid > div');
+            
+            elements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+                
+                if (elementTop < window.innerHeight - elementVisible) {
+                    element.classList.add('opacity-100');
+                    element.classList.remove('opacity-0', 'translate-y-8');
+                }
+            });
+        };
+        
+        // Initial setup for animation
+        document.querySelectorAll('.grid > div').forEach(el => {
+            el.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-8');
+        });
+        
+        // Run once on load and then on scroll
+        window.addEventListener('load', animateOnScroll);
+        window.addEventListener('scroll', animateOnScroll);
+    </script>
+
+
+    
+    
+    </body></html>
